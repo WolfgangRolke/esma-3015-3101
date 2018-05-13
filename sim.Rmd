@@ -1,0 +1,341 @@
+---
+header-includes: \usepackage{color}
+output:
+  html_document: default
+  pdf_document:
+    fig_caption: no
+---
+<style>
+table, th, td { text-align:right; }
+th, td {padding: 10px;}
+</style>
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+whichcomp <- strsplit(getwd(),"/")[[1]][3]
+load(paste0("c:/users/", whichcomp, "/Dropbox/Resma3/Resma3.RData"))
+library(knitr)
+opts_chunk$set(fig.width=6, fig.align = "center", 
+      out.width = "70%", warning=FALSE, message=FALSE)
+library(ggplot2)
+library(grid)
+```
+`r rmd$basefontsize()`
+
+#Simulation
+
+A simulation is a way to do experiments on a computer. This can be useful to do various calculations as well as to test the performance of different methods.  
+
+A simulation generally consists of the following parts:
+
+- generate random data 
+- calculate something for this data  
+- repeat the above many times, keep track of results
+- analyze those results
+
+**Example:** say we are interested in the following: if a fair die is rolled, what is the probability of a six?  
+
+Now we already know the answer (1/6) but let's do a simulation anyway.
+
+- generate random data    
+in the real live experiment the data are the numbers 1-6, each with probability 1/6. We can generate data like this as follows:
+
+```{r}
+x <- sample(1:6, size = 20, replace = TRUE)
+x
+```
+
+- calculate something for this data  
+
+we want to know if x is 6 or not. This we can do with
+
+```{r}
+y <- (x==6)
+rbind(x, y)
+```
+
+- repeat the above many times, keep track of results  
+
+in the calculations above we already did the simulation 20 times. 
+In general one wants to do this 10000 times (or so). Of course then we can't print all the stuff to the screen.
+
+```{r}
+B <- 10000
+x <- sample(1:6, size = B, replace = TRUE)
+```
+
+- analyze those results  
+
+we want to know the proportion of 6's, so
+
+```{r}
+sum(x==6)/B
+```
+
+Note that each time we run a simulation the computer generates new data, so the answer will always be a little bit different:
+
+```{r}
+sum(sample(1:6, size = B, replace = TRUE)==6)/B
+```
+
+
+In the example above we could generate all the data (the 10000 x's) in one step. In many examples though this has to be done one at a time. In that case we can use a **for** loop:
+
+```{r}
+B <- 10000
+y <- rep(0, B)
+for(i in 1:B) y[i] <- (sample(1:6, size = 1) == 6)
+sum(y)/B
+```
+
+Sometimes the calculation done inside the for loop needs several steps. If so use { } to keep them together:
+
+```{r}
+for(i in 1:B) {
+ x <- sample(1:6, size = 1)
+ y[i] <- (x == 6)
+}
+sum(y)/B 
+```
+
+**Note** When you type this sequence of commands into R after the { the cursor will change from > to +
+
+###Generating Data
+
+R has a great many standard probability distributions built in. The general format is **r** followed by the name (sort of). So for example to generate 20 observations  from a normal distribution with mean 10 and standard deviation 3 use 
+
+```{r}
+rnorm(20, 10, 3)
+```
+
+The sample command above generally works for distributions that take finite discrete values with different probabilities. You can also generate many values in one step.
+
+**Example**: say we roll a fair die 5 times. What is the probability of no sixes?
+
+```{r}
+B <- 10000
+y <- rep(0, B)
+for(i in 1:B) {
+   x <- sample(1:6, size=5, replace = TRUE)
+   z <- (x == 6)
+   y[i] <- (sum(z) == 0) 
+}
+sum(y)/B 
+```
+
+**Example**: say we flip a fair coin 20 times. What is the probability of at most 7 heads?  
+
+a coin comes up "heads" or "tails", so flipping it once we could do with
+
+```{r}
+sample(c("heads","tails"), size=1)
+```
+
+Now of course we want to flip the coin 20 times , so we need: 
+
+```{r}
+x <- sample(c("heads","tails"), size = 20, replace=TRUE)
+x
+```
+
+Next we need to figure out how many "heads" we have. Here are two ideas:
+
+```{r}
+sum(x == "heads")
+```
+
+```{r}
+table(x)["heads"]
+```
+
+Now we can do the whole simulation:
+
+```{r}
+B <- 10000
+y <- rep(0,B)
+for(i in 1:B) {
+  x <- sample(c("heads","tails"), size = 20, replace = TRUE)
+  if(sum(x == "heads") <= 7) y[i] <- 1
+}
+sum(y)/B
+```
+
+**Example**: say it is known that people from a certain population are 40% white, 25% black, 20% hispanic and 15% others. If we  randomly select 10 of them, what is the probability that there is at least one of each group?  
+
+First, we are selecting 10 people who are either white, black, hispanic or other, we again can do that with the sample command:
+
+```{r}
+races <- c("white", "black", "hispanic","other")
+sample(races , size = 10, replace = TRUE)
+```
+
+but they are in different proportions in the population, so we need to use
+
+```{r}
+p <- c(40, 25, 20, 15)/100
+x <- sample(races, size = 10, replace = TRUE, prob = p) 
+x
+```
+
+Next we need some way to check whether we have one of each group in x. (Clearly the case here but we need to do this automatically, not by checking ourselves). So is there a white person among our sample?
+
+```{r}
+x == "white" 
+```
+
+if there is we have at least one TRUE, if not all of them will be FALSE. Remember that we can add these up, with FALSE = 0 and TRUE = 1:
+
+```{r}
+sum(x == "white")
+```
+
+so if sum( x== "white") > 1 there was at least one white person, if sum(x == "white") = 0 there is none. Say we set y = 0 and then run 
+
+```{r}
+y <- 0
+if(sum(x == "white") == 0) y <- 1
+if(sum(x == "black") == 0 ) y <- 1
+if(sum(x == "hispanic") == 0) y <- 1
+if(sum(x == "other") == 0) y <- 1
+y
+```
+
+what happens? If there are no whites, on the first line y is set to 1, if there are no blacks, on the second line y is set to 1 and so on.  
+
+If there is at least one of each, y is never set to 1, it stays at 0! 
+
+So now we put it all together:
+
+```{r}
+B <- 10000
+y <- rep(0,B)
+for(i in 1:B) {
+  x<-sample(races, size = 10, replace = TRUE, prob=p)
+ if(sum(x == "white") == 0) y[i] <- 1
+ if(sum(x == "black") == 0) y[i] <- 1
+ if(sum(x == "hispanic") == 0) y[i] <- 1
+ if(sum(x == "other") == 0) y[i] <- 1
+}
+sum(y)/B
+```
+
+**Note** In the above simulation we used the exact words from the real live problem. This is not actually necessary, we can easily "code" those details:
+
+```{r}
+B <- 10000
+y <- rep(0,B)
+for(i in 1:B) {
+ x <- sample( 1:4, size = 10, replace = TRUE, prob =p)
+ for(j in 1:4)
+   if(sum(x == j) == 0) y[i] <- 1
+}
+sum(y)/B
+```
+also, we often have different ways to do things. In the current ploblem notice the following:
+
+```{r echo=-1}
+set.seed(3);p <- c(40, 25, 20, 15)/100
+x1 <- sample(races, size = 10, replace = TRUE, prob =p)
+x1
+table(x1)
+x2 <- sample(races, size = 10, replace = TRUE, prob =p)
+x2
+table(x2)
+```
+
+In the first case one of the 4 races ("other") is missing whereas in the second all are there. We can distinguish between them with 
+
+```{r}
+length(table(x1))
+length(table(x2))
+```
+So if length(table(x))<4 we do not have one of each race, and so we can rewrite the simulation again:
+
+```{r}
+B <- 10000
+y <- rep(0,B)
+for(i in 1:B) {
+ x <- sample( 1:4, size = 10, replace = TRUE, prob =p)
+ y[i] <- (length(table(x)) < 4)
+}
+sum(y)/B
+```
+
+Notice that this is quite a bit less to type. On the other hand it is not as clear what the program does. At least in the beginning I recommend to stay as close to the real live problem as possible!
+
+**Example**: say we have data from a normal distribution with mean 100 and standard deviation 25. What is the probability that an observation is less than 90?
+
+```{r}
+B <- 10000
+x <- rnorm(B, 100, 25)
+sum(x<90)/B
+```
+
+**Example** use simulation to generate the histogram of correlation coefficients from the Draft data.
+
+```{r}
+B <- 10000
+r <- rep(0, B)
+for(i in 1:B) {
+  x <- sample(1:366, size=366)
+  r[i] <- cor(1:366, x)
+}
+hplot(r)
+```
+
+**Example:** say we roll a fair die 10 times. What is the mean and the standard deviation of the number of sixes?  
+
+The number of "successes" in a sequence of Bernoulli trials is one of those special distributions. It is called the *Binomial* distribution and we can generate data from it with **rbinom(B, n, p)** where n is the number of trial and p is the success probability. So
+
+```{r}
+B <- 10000
+x <- rbinom(B, 10, 1/6)
+mean(x)
+sd(x)
+```
+**Example:** In the beginning of the discussion on probability I had a table of probabilities. Let's recreate it!
+
+Say we flip a fair coin 1000 times. What is the probability of 525 or more heads?
+
+
+```{r}
+B <- 10000
+x <- rbinom(B, 1000, 1/2)
+sum(x>=525)/B
+```
+Now we had that table for 500, 505, .., 550, so:
+
+```{r}
+B <- 10000
+a <- 0:10*5+500
+y <- rep(0, 11)
+x <- rbinom(B, 1000, 1/2)
+for(i in 1:11) 
+  y[i] <- sum(x>=a[i])/B  
+cbind(a, y)
+```
+
+**Example:** At the end of the discussion on probability I had told you the formulas for the mean and the standard deviation of a Bernoulli trial: $\mu=p$ and $\sigma=\sqrt{p(1-p)}$. Let's test that!
+
+```{r}
+p <- 0.5
+B <- 10000
+x <- sample(0:1, size=B, replace=TRUE, prob=c(1-p, p))
+round(c(p, mean(x)), 4)
+round(c(sqrt(p*(1-p)), sd(x)), 4)
+```
+
+```{r}
+p <- 0.15
+B <- 10000
+x <- sample(0:1, size=B, replace=TRUE, prob=c(1-p, p))
+round(c(p, mean(x)), 4)
+round(c(sqrt(p*(1-p)), sd(x)), 4)
+```
+
+```{r}
+p <- 0.75
+B <- 10000
+x <- sample(0:1, size=B, replace=TRUE, prob=c(1-p, p))
+round(c(p, mean(x)), 4)
+round(c(sqrt(p*(1-p)), sd(x)), 4)
+```

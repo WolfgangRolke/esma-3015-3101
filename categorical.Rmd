@@ -1,0 +1,281 @@
+---
+header-includes: \usepackage{color}
+output:
+  html_document: default
+  pdf_document:
+    fig_caption: no
+---
+<style>
+table, th, td { text-align:right; }
+th, td {padding: 10px;}
+</style>
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+whichcomp <- strsplit(getwd(),"/")[[1]][3]
+load(paste0("c:/users/", whichcomp, "/Dropbox/Resma3/Resma3.RData"))
+library(knitr)
+opts_chunk$set(fig.width=6, fig.align = "center", 
+      out.width = "70%", warning=FALSE, message=FALSE)
+library(ggplot2)
+library(grid)
+```
+`r rmd$basefontsize()`
+#Categorical Data 
+
+###Case Study: wrinccensus
+
+Consider the variable Gender. Clearly this is categorical data. Usually the first thing one would do is simply count how many of each type there are:
+
+```{r,warning=FALSE}
+attach(wrinccensus) 
+table(Gender)
+```
+
+###Case Study: Race and Education
+
+According to a table from the [US Department of Education](http://nces.ed.gov/programs/digest/d11/tables/dt11_237.asp) there were 19,980,000 students in US colleges in the fall of 2010. Their breakdown by race was as follows:
+ 
+```{r, echo=FALSE}
+race.table
+```
+
+If a table is used for presentation purposes it should usually include a little more information and maybe a better ordering, for example by size. Also, big numbers are often expressed in bigger units:
+
+```{r, echo=FALSE}
+x <- cbind(race.table, rep(0, 5))
+x[, 1] <- x[, 1]/1000
+x[, 2] <- round(x[, 1]/sum(x[, 1])*100, 1)
+colnames(x) <- c("Number (in 1000)", "Percentage")
+x <- x[c(5, 3, 4, 2, 1), ]
+knitr::kable(x)
+```
+
+In order to compute the percentages we need to divide by the total and multiply by 100. The total is found using the sum command: 
+
+```{r}
+x <- c(12722, 3039, 2741, 1282, 196)
+round(x/sum(x)*100,1)
+```
+
+As we said before, some categorical variables have a built-in (natural) ordering, for example t-shirt size (small, medium, large, x-large) or grades (A,B, ...). Such an ordering can also be used.
+
+###Graphs for Categorical Data
+
+A very popular Choice: Pie Charts
+
+**but**: 
+
+[Death to Pie Charts] 
+(http://www.storytellingwithdata.com/blog/2011/07/death-to-pie-charts)
+
+Much better: Bar charts 
+
+```{r}
+barchart(race.table, new.order=c(5, 3, 4, 2, 1))
+```
+
+**Note**: without the  newOrder=c(5, 3, 4, 2, 1)) argument alphabetic ordering is used, which is not very nice!
+
+**Note**: to show the graph based on percentage use the argument Percent="Grand":
+
+```{r}
+barchart(race.table, new.order=c(5, 3, 4, 2, 1), Percent="Grand")
+```
+
+**Note**
+The argument to *barchart* has to be a table, usually from a call to the R table function:
+
+```{r, warning=FALSE, message=FALSE}
+attach(wrinccensus)
+barchart(table(Job.Level))
+```
+
+**Example** This is a nice professional table from the website of the CDC (Centers for Disease Control) about the dangers of smoking:
+
+![](graphs/smoking.gif)
+
+
+##Totals (Frequencies) vs. Percentages
+
+Decide based on the background of the data which number is more relevant/important/interesting. 
+
+`r rmd$vspace()`
+
+Some of the things to consider are:
+
+If the data is a random sample from a larger population percentages are often better:
+
+**Example** of 150 randomly selected people in a phone survey 85 said they would vote for candidate AA in the next election &rarr; use 57% instead. 
+
+**Example** in a company with 150 employees 85 said they like their job &rarr;  use these numbers
+  
+For small numbers use frequencies, for large numbers use percentages
+When using percentages it has to be clear what the totals were.
+
+**Example** an advertisement in the newspaper reads: "Almost 70% of the participants in a scientific study said they prefer Coke over Pepsi".
+
+Now if this study had 1000 participants and about 700 of those said they like Coke better than Pepsi, that is quite impressive. On the other hand, if it had 3 participants, two of whom liked Coke ( 2 out of 3 = 67%, "almost" 70%) than this may not be so interesting! 
+When comparing groups of unequal sizes, percentages are almost always necessary:
+
+**Example** in a survey of the employees in a company they were asked whether they liked there current position:
+
+```{r, echo=FALSE}
+x <- matrix(c(123, 85, 88, 61), 2, 2)
+dimnames(x) <- list(c("Male", "Female"), c("Yes", "No"))
+knitr::kable(x)
+```
+
+At first glance it seems that men are happier with their position than women (123 vs 88) but notice that there are more men than women in total (208 vs 149) so even if they are equally happy we would expect more men who said yes then women. Changing to percentage gives
+
+```{r, echo=FALSE}
+x <- data.frame(Happy = c(59.1, 59.0))
+rownames(x) <- c("Male", "Female")
+knitr::kable(x)
+```
+
+Notice another advantage of the table with percentages: because there are only the two options yes and no, we need only the perentage of one, the other is simply 100-.. 
+
+```{r, echo=FALSE}
+x <- data.frame(Unappy = 100-c(59.1, 59.0))
+rownames(x) <- c("Male", "Female")
+knitr::kable(x)
+```
+
+and in general the smaller a table, the better (as long as it has all the information).
+
+These are just guidelines, there can always be exceptions if there is a good reason.
+
+##Rounding
+
+When doing a calculation the rules are:
+
+-  if the number is used again in a later calculation, use three digits more than the data
+
+-  if the number is the final result, round to 1 digit more than the data. 
+
+**Example** Data is the weights of patients on two visits:
+
+```{r, echo=FALSE}
+x <-
+structure(list(A = c(102.5, 101.2), B = c(156.3, 149.8), C = c(139.7, 
+141), D = c(188.2, 185.9)), .Names = c("A", "B", "C", "D"), class = "data.frame", row.names = c(NA, 
+-2L))
+knitr::kable(x)
+```
+
+We want to find the average percentage change from visit 1 to visit 2:
+
+Intermediate calculation: visit 1/ visit 2 *100  
+
+101.2845849802 104.3391188251 99.0780141844 101.2372243141
+
+Data has 4 digits, so this should have 7 digits  
+
+101.2846 104.3391 99.0780 101.2372
+
+Find mean: (101.2846+104.3391+99.0780+101.2372)/4 = 101.484725
+
+This is final answer, round to 1 more digit than data: 101.48
+
+By default R always uses 7 digits:
+
+```{r, echo=FALSE}
+set.seed(112)
+x<- round(sort(rnorm(11, 10, 3)), 1)
+```
+
+```{r}
+x
+mean(x)
+```
+
+but many of the routines we use do some rounding already
+
+```{r}
+stat.table(x)
+```
+and you can use the ndigit argument to change how much:
+
+
+```{r}
+stat.table(x, ndigit=2)
+```
+
+
+
+##Contingency Tables 
+
+###Case Study: Treatment of Drug Addiction
+
+Cocaine addiction is hard to break. Addicts need cocaine to feel any pleasure, so perhaps giving them an antidepressant drug will help. A 3 year study with 72 chronic cocaine users compared an antidepressant called desipramine with standard treatment for cocaine addiction (lithium) and a placebo. One third of the subjects chosen at random received each drug. After 3 years for each addict it was determined whether he/she was drug free or relapsed. 
+
+The data, from D.M. Barnes, "Breaking the Cycle of Addiction", Science, 241 1988).
+
+```{r}
+head(drugaddiction)
+```
+
+So here for each subject we have two variables, "Drug" with values "Desipramine", "Lithium" and "Placebo", and "Relapsed" with values "Yes" and "No". Both variables are categorical. 
+
+Usually the first thing to do with this type of data is to just count each combination of values and write them up in a **contingency table**: 
+
+```{r}
+attach(drugaddiction)
+table(Drug, Relapse)  
+```
+
+If the table is for publication you probably want to add some row and column totals: 
+
+```{r, echo=FALSE}
+x <- table(Drug, Relapse)
+x <- cbind(x, apply(x, 1, sum))
+x <- rbind(x, apply(x, 2, sum))
+colnames(x)[3] <- "Totals"
+rownames(x)[4] <- "Totals"
+knitr::kable(x)
+```
+
+Often instead of the totals (frequencies) these tables might be based on percentages. Here, though, there are three types of percentages: 
+
+Percentages based on Grand Total: 
+
+```{r, echo=FALSE}
+x1 <- round(100*x/sum(x[1:3, 1:2]), 1)
+knitr::kable(x1)
+```
+
+Percentages based on Row Totals: 
+
+```{r, echo=FALSE}
+x1 <- round(100*x/apply(x[1:3, 1:2], 1, sum), 1)
+x1[4, ] <- round(x1[4, ]/3,1)
+knitr::kable(x1)
+```
+
+Percentages based on Column Totals: 
+
+```{r, echo=FALSE}
+cls <- apply(x[1:3, 1:3], 2, sum)
+x1 <- x
+for(i in 1:3) x1[, i] <- round(100*x1[, i]/cls[i], 1)
+knitr::kable(x1)
+```
+
+Which of these 4 tables is the most interesting? It depends on the story behind the data and the result you wish to highlight. Here it is probably the third table which shows clearly that the "relapse rate" for desipramine is much smaller (41.7%) than for either Lithium (75%) or the Placebo (83.3%) 
+
+The standard graph for this data is a **multiple bar chart**. It is done with the same command as before.
+
+There are always two depending on which way the bars are grouped together, see
+
+```{r}
+barchart(table(Drug, Relapse))
+barchart(table(Relapse, Drug))
+```
+
+or based on percentages:
+
+```{r}
+barchart(table(Drug, Relapse), Percent="Row" )
+```
+
+As with the tables the graphs can also show each of the three types of percentages. 

@@ -1,0 +1,252 @@
+---
+header-includes: \usepackage{color}
+output:
+  html_document: default
+  pdf_document:
+    fig_caption: no
+---
+<style>
+table, th, td { text-align:right; }
+th, td {padding: 10px;}
+</style>
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+whichcomp <- strsplit(getwd(),"/")[[1]][3]
+load(paste0("c:/users/", whichcomp, "/Dropbox/Resma3/Resma3.RData"))
+library(knitr)
+opts_chunk$set(fig.width=6, fig.align = "center", 
+      out.width = "70%", warning=FALSE, message=FALSE)
+library(ggplot2)
+library(grid)
+```
+`r rmd$basefontsize()`
+
+#Regression
+
+If there is a relationship between variables "x" and "y", can we describe it?
+
+We do that by finding a **model**, that is an equation y=f(x) 
+Here we keep it very simple and consider only **linear** relationships, that is equations of the form 
+
+$$
+y = mx+b 
+$$
+
+In Statistics though we use a slightly different notation: 
+
+$$ 
+y = \beta_0 + \beta_1 x 
+$$
+
+The logic here is this: if we know x, we can compute y. Unfortunately there are always "errors" in this calculation, so the answer y varies even for the same x. 
+
+For example, let x be the number of hours a student studies for an exam, and y the score on the exam. Say we know from long experience that y=50+5x. So even if the student doesn't study at all (x=0) he/she would still get around 50 points, and for every hour studied the score goes up by about 5 points.
+
+But of course there are many other factors influencing the grade such as general ability, previous experience, being healthy on the day of the exam, exam anxiety etc, so for any specific student the score will not be exactly what the equation predicts. So if three students all study 6 hours, the equation predicts a score of 50+5*6=80 for all of them but one might get a 69, the next a 78 and the third a 99. What the equation predicts is actually their mean score. 
+
+This is illustrated in the next graph:
+
+```{r echo=FALSE}
+x <- sample(0:10, size=100, replace = TRUE, 
+      prob = c(1:7, 7:4))
+y <- 40+5*x+rnorm(100, 0, 5)
+x <- c(x, 6, 6, 6)
+y <- c(y, 77, 85, 81)
+hour <- ifelse(x==6, "a", "b")
+df <- data.frame('Hours Studied'=x, Score=y, hour=hour)
+ybar <- mean(y[x==6])
+ggplot(df, aes(x, y, color=hour)) + 
+  geom_point() +
+  labs(x='Hours Studied', y="Score") +
+  geom_smooth(method="lm", se=FALSE, color="black") +
+  theme(legend.position = "none") +
+  annotate("text", label="X", x=6, y=ybar, 
+        size=8, color="red")
+```
+
+
+where the scores of the people who studied 6 hours are in red, and their mean score is marked by an X.
+
+##App 
+
+```{r eval=FALSE}
+run.app(lsr1)
+```
+
+this app  illustrates the meaning of the line as the mean response.
+
+`r rmd$hr()`
+
+$\beta_0$ and $\beta_1$ are numbers that depend on the population from which the data (X,Y) is drawn. Therefore they are **parameters** just like the mean or the median. 
+
+A standard problem is this: we have a dataset and we believe there is a linear relationship between x and y. We would like to know the equation 
+
+$$
+y = \beta_0 + \beta_1 x
+$$
+
+that is we need to "guess" what $\beta_0$ and $\beta_1$ are. We will estimate them by a method called **least squares regression**. This is done by the R command **slr**: 
+
+###Wine Consumption and Heart Disease
+Data from a study on consumption of wine (in liters per person) and heart disease rates (in per 100000) in 19 countries. 
+
+```{r}
+wine
+```
+
+```{r, warning=FALSE}
+attach(wine)
+splot(Heart.Disease.Deaths, Wine.Consumption)
+```
+
+so we see a clear negative correlation, the higher the wine consumption, the lower the heart disease rate.
+
+`r rmd$vs()`
+
+Careful: this was an observational study, here correlation does NOT imply causation!  
+
+`r rmd$vs()`
+
+So, what can we say about the actual relationship?
+
+```{r fig.show='hide'}
+slr(Heart.Disease.Deaths, Wine.Consumption)
+```
+
+**Note** the slr command also draws a graph, which we can ignore.
+
+There is a nice graph called the fitted line plot, which is the scatterplot with the least square regression line added to it:
+
+```{r}
+splot(Heart.Disease.Deaths, Wine.Consumption, addLine=1)
+```
+
+###Case Study: 1970's Draft
+
+```{r, warning=FALSE}
+attach(draft)  
+```
+
+```{r fig.show='hide'}
+slr(Draft.Number, Day.of.Year)
+```
+
+```{r}
+splot(Draft.Number, Day.of.Year, addLine = 1)
+```
+
+###App
+
+```{r eval=FALSE}
+run.app(lsr)
+```
+
+this app illustrates the least squares regression line. 
+
+Just play around with different slopes and intercepts and see how the fitted line plot and the regression equation change
+
+`r rmd$hr()`
+
+Here are two important facts about least squares regression: 
+
+1) say $\overline{X}$ is the mean of the x vector and $\overline{Y}$ is the mean of the y vector, then ($\overline{X}$ , $\overline{Y}$ )  is **always** a point on the line.
+
+2) We have seen previously that for the correlation coefficient it does not matter what variable we choose as X and which as Y, that is we have 
+
+**cor(x,y) = cor(y,x)**
+
+Now let's see what happens in regression 
+
+```{r fig.show='hide'}
+slr(Heart.Disease.Deaths, Wine.Consumption)
+```
+
+The least squares regression equation is:
+
+Heart.Disease.Deaths  = 260.563 - 22.969 Wine.Consumption 
+
+so
+
+22.969 Wine.Consumption   = 260.563 - Heart.Disease.Deaths
+
+and
+
+Wine.Consumption = 260.563/22.969 - 1/22.969 Heart.Disease.Deaths
+
+Wine.Consumption = 11.34 - 0.044 Heart.Disease.Deaths
+
+BUT
+
+```{r fig.show='hide'}
+slr(Wine.Consumption, Heart.Disease.Deaths)
+```
+
+and that is not the same equation! 
+
+So in regression it is important to distinguish between the 
+**predictor or independent variable (x)** 
+
+and the 
+
+**response** or **dependent variable (y)**.
+
+##Regression towards the Mean
+
+###Case Study: The Sports Illustrated Jinx
+
+It has often been noted that anyone featured with his/her picture on the cover of Sports Illustrated is then jinxed, that is their performance goes down. Some people have tried to find an explanation for this, for example that an athlete gets lazy after being successful, or maybe that they have to many media days and can't practise enough. In reality this is just an example of **regression to the mean**.
+
+###Case Study: Galton's Data on the Heights of Parents and their Children 
+
+At the end of the 19th century [Sir Francis Galton](href="http://en.wikipedia.org/wiki/Sir_Francis_Galton") collected the height of the parent (actually fathers) and the height of the oldest child (son) of almost 1000 families. 
+
+The fitted line plot is 
+
+```{r, warning=FALSE}
+attach(galton)
+splot(Child, Midparent, addLine= 1)
+```
+
+and the least squares regression equation is
+
+```{r fig.show='hide'}
+slr(Child, Midparent)
+```
+
+Notice: the slope of the line (0.646) is 
+
+a) $\beta_1 > 0$
+b) $\beta_1 < 1$
+
+so we see that 
+
+a) children of small (tall) parents tend to be small (tall) also
+b) but not as small (tall) as their parents!
+
+Of course this makes good sense: if a person is tall because of their genes (and the child has half of those) but also because of a lot of other factors, many of which the child does not have
+
+`r rmd$vs()`
+
+There is something about the graph that is not very nice. Because the heights were recorded only to within the nearest .2 inches lot's of data points repeat, but they appear only once in the graph. We can fix that by **jittering** the points, that is moving them randomly around just a little bit: 
+
+```{r}
+splot(Child,  Midparent, jitter=TRUE, addLine= 1 )
+```
+
+**Example** Ever notice that often those students that do very well on the first exam do not quite so well on the second? Is it that they got lazy, thought the exams are easy, that they could do well without studying? 
+
+Maybe, but maybe it also just an example of regression to the mean!
+
+**Example** say we have the following data: a group of subjects is participating in a weight loss program. They are weighted before and after the program. Now we pick out the (say) 10% people that were the heaviest at the beginning, and we notice that their average weight was 207 pounds then but is only 201 pounds at the end of the program. Can we conclude the program worked (at least for  heavy people)?
+
+Maybe, but not necesserily. Again the same outcome could be due to regression to the mean.  
+
+###Case Study: The Sports Illustrated Jinx
+
+This also explains the Jinx: an athlete gets on the cover after having done very well, likely a bit better than is normal even for them, after a while (Cover of no Cover) they will **regress to the mean**.
+
+Regression towards the mean is one of those Statistical phenomena that is often misunderstood, with people looking for an explanation were this is none! 
+
+For more on this go [here](href="http://en.wikipedia.org/wiki/Regression_toward_the_mean).
+
+For more on least squares regression see page 207 of the textbook.
